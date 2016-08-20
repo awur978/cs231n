@@ -103,31 +103,89 @@ def run_cross_validation(learning_rates, learning_rate_decays, regularization_st
 
     return results, best_val
 
+def randomized_search(lr):
+    """
+    Tune hyperparameters using the validation set.
+
+    Inputs:
+    - learning_rates: list of different values for lr
+    - learning_rate_decays: list of different values for lrd
+    - regularization_strengths= list of different values for rs
+
+    Output:
+    - dict returning train and valid accuracy for given lr, rs and lrd.  
+    """
+
+    results = {}
+    best_val = -1
+    best_net = None
+
+    # bigger => more time
+    max_count = 20
+
+    for count in range(max_count):
+        # randomly create params
+        rs = 10**np.random.uniform(-4.0, -3.0)
+        lrd = 10**np.random.uniform(-0.1, 0)
+
+        # print params
+        print('Training params: learning rate: {}, reg strength: {}, lr decay: {}'.format(lr, rs, lrd))
+
+        # instantiate NN
+        net = TwoLayerNet(input_size, hidden_size, num_classes)
+
+        # train it
+        stats = net.train(X_train, y_train, X_val, y_val,
+                      num_iters=3000, batch_size=200,
+                      learning_rate=lr, learning_rate_decay=lrd,
+                      reg=rs, verbose=True)
+
+        # predict train and valid
+        y_train_pred = net.predict(X_train)
+        y_val_pred = net.predict(X_val)
+
+        # compute accuracies
+        train_accuracy = np.mean(y_train == y_train_pred)
+        val_accuracy = np.mean(y_val == y_val_pred)
+
+        # save best network
+        if val_accuracy > best_val:
+            best_val = val_accuracy
+            best_net = net
+
+        # store best params
+        results[(lr, rs, lrd)] = (train_accuracy, val_accuracy)
+
+    return results, best_val
+
+
 # load the data
 print('\nLoading the data...')
 X_train, y_train, X_val, y_val, X_test, y_test = get_CIFAR10_data()
 
 # define NN parameters
 input_size = 32 * 32 * 3
-hidden_size = 50 # increasing this to ~300 seems to increase accuracy
+hidden_size = 50
 num_classes = 10
 
-# hyperparameter tuning
+# preliminary tuning to determine learning_rate
+# tweak learning_rate, leave others unchanged.
 learning_rates = [9e-4]
-learning_rate_decays = [0.8]
-regularization_strengths = [0.99]
+learning_rate_decays = [1.0]
+regularization_strengths = [0.0]
+results, best_val  = run_cross_validation(learning_rates, learning_rate_decays, regularization_strengths)
 
 # hyperparameter tuning
 print('\nHyperparameter tuning...')
-results, best_val  = run_cross_validation(learning_rates, learning_rate_decays, regularization_strengths)
+results, best_val  = randomized_search(lr=3e-3)
 
 for lr, reg, lrd in sorted(results):
     train_accuracy, val_accuracy = results[(lr, reg, lrd)]
-    print('lr {} reg {} lrd {} train accuracy: {} val accuracy: {}'.format(lr, reg, lrd, train_accuracy, val_accuracy))
+    print('lr {} rs {} lrd {} train accuracy: {} val accuracy: {}'.format(lr, reg, lrd, train_accuracy, val_accuracy))
     
 print('Best validation accuracy achieved during cross-validation: %f' % best_val)
 
-# hypertuning gives the following best parameters
+# grab best params
 lr, rs, lrd = max(results, key=lambda x: results[x[0:3]])
 
 # instantiate best NN
@@ -137,7 +195,7 @@ best_net.train(X_train, y_train, X_val, y_val, num_iters=2000, batch_size=200,
                learning_rate=lr, learning_rate_decay=lrd, reg=rs, verbose=True)
 
 # visualize the weights of the best network
-show_net_weights(best_net)
+# show_net_weights(best_net)
 
 test_acc = (best_net.predict(X_test) == y_test).mean()
 print('Test accuracy: ', test_acc)
