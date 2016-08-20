@@ -121,7 +121,7 @@ def randomized_search(lr):
     best_net = None
 
     # bigger => more time
-    max_count = 20
+    max_count = 10
 
     for count in range(max_count):
         # randomly create params
@@ -165,7 +165,7 @@ X_train, y_train, X_val, y_val, X_test, y_test = get_CIFAR10_data()
 
 # define NN parameters
 input_size = 32 * 32 * 3
-hidden_size = 50
+hidden_size = 300
 num_classes = 10
 
 # preliminary tuning to determine learning_rate
@@ -175,7 +175,7 @@ learning_rate_decays = [1.0]
 regularization_strengths = [0.0]
 results, best_val  = run_cross_validation(learning_rates, learning_rate_decays, regularization_strengths)
 
-# hyperparameter tuning
+hyperparameter tuning
 print('\nHyperparameter tuning...')
 results, best_val  = randomized_search(lr=3e-3)
 
@@ -186,16 +186,21 @@ for lr, reg, lrd in sorted(results):
 print('Best validation accuracy achieved during cross-validation: %f' % best_val)
 
 # grab best params
-lr, rs, lrd = max(results, key=lambda x: results[x[0:3]])
+# lr, rs, lrd = max(results, key=lambda x: results[x[0:3]])
+
+# obtained from a run that took 30 mins to complete
+lr = 0.003
+rs = 0.00035080688053350673
+lrd = 0.891503040186239
 
 # instantiate best NN
 best_net = TwoLayerNet(input_size, hidden_size, num_classes)
 # train it
-best_net.train(X_train, y_train, X_val, y_val, num_iters=2000, batch_size=200, 
+best_net.train(X_train, y_train, X_val, y_val, num_iters=3000, batch_size=200, 
                learning_rate=lr, learning_rate_decay=lrd, reg=rs, verbose=True)
 
 # visualize the weights of the best network
-# show_net_weights(best_net)
+show_net_weights(best_net)
 
 test_acc = (best_net.predict(X_test) == y_test).mean()
-print('Test accuracy: ', test_acc)
+print('Test accuracy: ', test_acc) # 53% accuracy !
