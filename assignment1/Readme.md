@@ -1,24 +1,37 @@
 ## Hyperparameter Tuning
 
-Turn off regularization and learning rate decay to find appropriate learning rate range. 
+I started off by turning off the `regularization_strength` and `learning_rate_decay` to find an appropriate `learning_rate` range. 
 
-Started with thw following:
+With the following code:
 
 ```python
 # hyperparameters
-learning_rates = [1e-6]
+learning_rates = [1e-4]
 learning_rate_decays = [1.0]
 regularization_strengths = [0.0]
 ```
-The loss does not decrease so the learning rate is too small. Make it bigger. 
+the loss barely budges so the learning rate is too small. I made it bigger. 
 
 ```python
 # hyperparameter tuning
-learning_rates = [1e-1]
+learning_rates = [1e-2]
 learning_rate_decays = [1.0]
 regularization_strengths = [0.0]
 ```
 
-We get `NaN` which means it is too big. We slowly decrease and find range to be between 1e-3 and 1e-4.
+Terminal outputs `nan` and some other errors meaning our learning rate is too big now. 
 
+Hence, I decided to set it to in the `1e-3` range. Now, I create a `random_search` function and try out values for `learning_rate_decays` and `reg_strength`.
 
+For example:
+
+```python
+# bigger => more time
+max_count = 20
+
+for count in range(max_count):
+    # randomly create params
+    rs = 10**np.random.uniform(-4.0, -3.0)
+    lrd = 10**np.random.uniform(-0.1, 0)
+    # ...code...
+```
