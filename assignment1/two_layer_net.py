@@ -53,18 +53,17 @@ def show_net_weights(net):
     plt.gca().axis('off')
     plt.show()
 
-def run_cv(hidden_sizes, learning_rates, learning_rate_decays, regularization_strengths):
+def run_cross_validation(learning_rates, learning_rate_decays, regularization_strengths):
     """
     Tune hyperparameters using the validation set.
 
     Inputs:
     - learning_rates: list of different values for lr
-    - hidden_sizes: list of different values for hs
     - learning_rate_decays: list of different values for lrd
     - regularization_strengths= list of different values for rs
 
     Output:
-    - dict returning train and valid accuracy for given lr, rs, hs and lrd.  
+    - dict returning train and valid accuracy for given lr, rs and lrd.  
     """
 
     results = {}
@@ -73,17 +72,16 @@ def run_cv(hidden_sizes, learning_rates, learning_rate_decays, regularization_st
 
     for lr in learning_rates:
         for rs in regularization_strengths:
-            for hs in hidden_sizes:
                 for lrd in learning_rate_decays:
                     # print params
-                    print('Training params: learning rate: {}, reg strength: {}, hidden size: {}, lr decay: {}'.format(lr, rs, hs, lrd))
+                    print('\nTraining params: learning rate: {}, reg strength: {}, lr decay: {}'.format(lr, rs, lrd))
 
                     # instantiate NN
-                    net = TwoLayerNet(input_size, hs, num_classes)
+                    net = TwoLayerNet(input_size, hidden_size, num_classes)
 
                     # train it
                     stats = net.train(X_train, y_train, X_val, y_val,
-                                      num_iters=1500, batch_size=200,
+                                      num_iters=2000, batch_size=200,
                                       learning_rate=lr, learning_rate_decay=lrd,
                                       reg=rs, verbose=True)
 
@@ -101,38 +99,39 @@ def run_cv(hidden_sizes, learning_rates, learning_rate_decays, regularization_st
                         best_net = net
 
                     # store best params
-                    results[(lr, rs, hs, lrd)] = (train_accuracy, val_accuracy)
+                    results[(lr, rs, lrd)] = (train_accuracy, val_accuracy)
 
     return results, best_val
 
 # load the data
-print('Loading the data...')
+print('\nLoading the data...')
 X_train, y_train, X_val, y_val, X_test, y_test = get_CIFAR10_data()
 
 # define NN parameters
 input_size = 32 * 32 * 3
+hidden_size = 50 # increasing this to ~300 seems to increase accuracy
 num_classes = 10
 
-# adjust these for tuning
-hidden_sizes = [50, 100]
-learning_rates = [1e-3]
-learning_rate_decays = [0.99]
-regularization_strengths = [0.8]
+# hyperparameter tuning
+learning_rates = [9e-4]
+learning_rate_decays = [0.8]
+regularization_strengths = [0.99]
 
 # hyperparameter tuning
-results, best_val  = run_cross_validation(hidden_sizes, learning_rates, learning_rate_decays, regularization_strengths)
+print('\nHyperparameter tuning...')
+results, best_val  = run_cross_validation(learning_rates, learning_rate_decays, regularization_strengths)
 
-for lr, reg, hs,lrd in sorted(results):
-    train_accuracy, val_accuracy = results[(lr, reg, hs, lrd)]
-    print('lr %e reg %e hs %d lrd %e train accuracy: %f val accuracy: %f' % (lr, reg, hs, lrd, train_accuracy, val_accuracy))
+for lr, reg, lrd in sorted(results):
+    train_accuracy, val_accuracy = results[(lr, reg, lrd)]
+    print('lr {} reg {} lrd {} train accuracy: {} val accuracy: {}'.format(lr, reg, lrd, train_accuracy, val_accuracy))
     
 print('Best validation accuracy achieved during cross-validation: %f' % best_val)
 
 # hypertuning gives the following best parameters
-lr, rs, hs, lrd = max(results, key=lambda x: results[x[0:4]])
+lr, rs, lrd = max(results, key=lambda x: results[x[0:3]])
 
 # instantiate best NN
-best_net = TwoLayerNet(input_size, hs, num_classes)
+best_net = TwoLayerNet(input_size, hidden_size, num_classes)
 # train it
 best_net.train(X_train, y_train, X_val, y_val, num_iters=2000, batch_size=200, 
                learning_rate=lr, learning_rate_decay=lrd, reg=rs, verbose=True)
